@@ -1,0 +1,47 @@
+
+A Go interface to the Flickr API.
+
+Currently only two methods are supported.
+
+==============================================================
+
+package main
+
+import (
+	"fmt"
+	"github.com/agentio/FlickrAPI"
+)
+
+func main() {
+
+	flickr := FlickrAPI.Connection{
+		APIKey:    "YOUR-API-KEY",
+		APISecret: "YOUR-API-SECRET",
+	}
+	if true {
+		photosSearchResponse := FlickrAPI.PhotosSearchResponse{}
+		err := flickr.PhotosSearch(map[string]string{
+			"text":         "savannah georgia",
+			"license":      "5",
+			"content_type": "1",
+		}, &photosSearchResponse)
+
+		if err != nil {
+			fmt.Printf("%+v\n", err)
+		} else {
+			fmt.Printf("%+v\n", photosSearchResponse)
+		}
+	}
+	if true {
+		photosGetSizesResponse := FlickrAPI.PhotosGetSizesResponse{}
+		err := flickr.PhotosGetSizes(map[string]string{
+			"photo_id": "14396660080 ",
+		}, &photosGetSizesResponse)
+
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Printf("%+v\n", photosGetSizesResponse)
+		}
+	}
+}
