@@ -201,7 +201,6 @@ func (self Connection) PhotosGetSizes(query map[string]string, response *PhotosG
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%+v", string(body))
 	err = xml.Unmarshal(body, &response)
 
 	return err
