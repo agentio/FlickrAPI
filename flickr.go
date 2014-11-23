@@ -19,10 +19,10 @@ import (
 // https://github.com/mncaudill/go-flickr
 
 const (
-	endpoint        = "https://api.flickr.com/services/rest/?"
+	endpoint = "https://api.flickr.com/services/rest/?"
 )
 
-type request struct {
+type Request struct {
 	ApiKey string
 	Method string
 	Args   map[string]string
@@ -34,7 +34,7 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func (request *request) sign(secret string) {
+func (request *Request) sign(secret string) {
 	args := request.Args
 
 	// Remove api_sig
@@ -88,25 +88,11 @@ func encodeQuery(args map[string]string) string {
 	return s.String()
 }
 
-func (request *request) url() string {
+func (request *Request) url() string {
 	args := request.Args
 	args["api_key"] = request.ApiKey
 	args["method"] = request.Method
 	return endpoint + encodeQuery(args)
-}
-
-func (request *request) execute() (body []byte, ret error) {
-	if request.ApiKey == "" || request.Method == "" {
-		return nil, Error("Need both API key and method")
-	}
-	s := request.url()
-	res, err := http.Get(s)
-	defer res.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-	body, _ = ioutil.ReadAll(res.Body)
-	return body, nil
 }
 
 // Externally-visible handlers for specific API calls
@@ -117,7 +103,27 @@ func (request *request) execute() (body []byte, ret error) {
 type Connection struct {
 	APIKey    string
 	APISecret string
+	Client    *http.Client
 }
+
+func (connection *Connection) execute(request *Request) (body []byte, ret error) {
+	if connection.Client == nil {
+		connection.Client = &http.Client{}
+	}
+	if request.ApiKey == "" || request.Method == "" {
+		return nil, Error("Need both API key and method")
+	}
+	s := request.url()
+	httpRequest, err := http.NewRequest("GET", s, nil)
+	res, err := connection.Client.Do(httpRequest)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	body, _ = ioutil.ReadAll(res.Body)
+	return body, nil
+}
+
 
 // flickr.photos.search
 
@@ -150,14 +156,14 @@ type PhotosSearchResponse struct {
 }
 
 func (self Connection) PhotosSearch(query map[string]string, response *PhotosSearchResponse) (err error) {
-	r := &request{
+	r := &Request{
 		ApiKey: self.APIKey,
 		Method: "flickr.photos.search",
 		Args:   query,
 	}
 	r.sign(self.APISecret)
 
-	body, err := r.execute()
+	body, err := self.execute(r)
 	if err != nil {
 		return err
 	}
@@ -190,14 +196,14 @@ type PhotosGetSizesResponse struct {
 }
 
 func (self Connection) PhotosGetSizes(query map[string]string, response *PhotosGetSizesResponse) (err error) {
-	r := &request{
+	r := &Request{
 		ApiKey: self.APIKey,
 		Method: "flickr.photos.getSizes",
 		Args:   query,
 	}
 	r.sign(self.APISecret)
 
-	body, err := r.execute()
+	body, err := self.execute(r)
 	if err != nil {
 		return err
 	}
